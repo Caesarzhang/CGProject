@@ -14,4 +14,36 @@
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="源.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+  </ItemGroup>
+<ItemGroup>
+    <ClInclude Include="Dependencies\freeglut\freeglut.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\freeglut\freeglut_ext.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\freeglut\freeglut_std.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\freeglut\glut.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\glew\glew.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\glew\glxew.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\glew\wglew.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="Dependencies\freeglut\freeglut.lib" />
+    <Library Include="Dependencies\glew\glew32.lib" />
+  </ItemGroup>
 </Project>

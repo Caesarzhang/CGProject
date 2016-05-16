@@ -110,8 +110,23 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="源.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
+<ItemGroup>
+    <ClInclude Include="Dependencies\freeglut\freeglut.h" />
+    <ClInclude Include="Dependencies\freeglut\freeglut_ext.h" />
+    <ClInclude Include="Dependencies\freeglut\freeglut_std.h" />
+    <ClInclude Include="Dependencies\glew\glew.h" />
+    <ClInclude Include="Dependencies\glew\glxew.h" />
+    <ClInclude Include="Dependencies\glew\wglew.h" />
+    <ClInclude Include="Dependencies\freeglut\glut.h" />
+
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="Dependencies\freeglut\freeglut.lib" />
+    <Library Include="Dependencies\glew\glew32.lib" />
+  </ItemGroup>
 </Project>
