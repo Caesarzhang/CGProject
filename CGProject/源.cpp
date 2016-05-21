@@ -3,7 +3,7 @@
 #include <math.h>
 #include <iostream>
 using namespace std;
-#define LengthOfCube 153.0
+#define LengthOfCube 53.0
 #define LengthOfColumn 1.0
 
 #define j2h(x) (3.1415926*(x)/180.0)
@@ -11,17 +11,27 @@ using namespace std;
 #define StartHeadX (LengthOfCube/2+LengthOfColumn/2)
 
 #define HeadCameDistance (1.732051*2*LengthOfColumn*2)
+#define RadiusOfCamera (8*LengthOfColumn)
 #define NewCamPosUp StartViewX
 #define NewCamPosView (StartHeadX+HeadCameDistance)
+
 int Score = 0;/*分数*/
 double Speed = 0.01;/*速度*/
-int Level = 1;/*速度等级*/
+int Level = 4;/*速度等级*/
 
-bool Transparent = 0;/*判断地图是否透明*/
-bool AutoRun = 1;
-bool EnableKeyboard = 1;
+bool
+Transparent = 0,/*判断地图是否透明*/
+AutoRun = 1,
+ChangingPlane = 0,
+EnableKeyboard = 1;
 
-int Up[2] = { 0,1 }, View[2] = { 1,1 }, Left[2] = { 2,1 };
+int
+Up[2] = { 0,1 },
+View[2] = { 1,1 },
+Left[2] = { 2,1 },
+OldUp[2] = { 0,1 },
+OldView[2] = { 1,1 },
+OldLeft[2] = { 2,1 };
 
 GLfloat 
 camera[3] = { StartViewX,-HeadCameDistance,0.0 },
@@ -37,6 +47,15 @@ floorColor[4] = { 0.64,0.376,0.2,0.7 },
 wallShininess = 50.0;       //镜面属性 小-粗糙
 
 void init();
+void BackUpVectors()
+{
+	for (int i = 0; i < 2; i++)
+	{
+		OldUp[i] = Up[i];
+		OldView[i] = View[i];
+		OldLeft[i] = Left[i];
+	}
+}
 void keyboardFunc(unsigned char key, int x, int y);
 void display();
 void processMousePassiveMotion(int x, int y);
@@ -46,7 +65,7 @@ void turn(int direction);
 void Update();
 void drawWorld();
 void setMatirial(const GLfloat mat_diffuse[4], GLfloat mat_shininess);
-
+void ChangingPlaneFunc();
 int main(int argc, char *argv[])
 {
 	glutInit(&argc, argv);
@@ -71,24 +90,50 @@ void Update()
 		camera[View[0]] += Speed*Level*View[1];
 		head[View[0]] += Speed*Level*View[1];
 	}
+
 	if (Score > Level * 100)
+	{
 		Level++;
-	
+	}
+
 	if (head[View[0]] * View[1] >= StartHeadX)
 	{
-		//cout << "head:" << head[View[0]] << endl;
+		ChangingPlane = 1;
+		angleChangePlane = 30.0;
+		AutoRun = 0;
+
+		BackUpVectors();
 		swap(View[0], Up[0]);
 		swap(View[1], Up[1]);
 		View[1] = -View[1];
+	}
+	if (ChangingPlane)
+	{
+		ChangingPlaneFunc();
+	}
+	glutPostRedisplay();
+}
 
-		camera[Up[0]] = NewCamPosUp*Up[1];
-		camera[View[0]] = -NewCamPosView*View[1];
+void ChangingPlaneFunc()
+{
+	angleChangePlane += 0.2;
 
+	camera[View[0]] = head[View[0]] + RadiusOfCamera * OldUp[1] * sin(j2h(angleChangePlane));
+	camera[Up[0]] = head[Up[0]] - RadiusOfCamera*OldView[1] * cos(j2h(angleChangePlane));
+
+	CameraUp[OldUp[0]] = cos(j2h(angleChangePlane - 30))*OldUp[1];
+	CameraUp[OldView[0]] = sin(j2h(angleChangePlane - 30))*OldView[1];
+	CameraUp[OldLeft[0]] = 0;
+	if (angleChangePlane >= 120.0)
+	{
 		CameraUp[Up[0]] = Up[1];
 		CameraUp[View[0]] = 0;
 		CameraUp[Left[0]] = 0;
+		camera[Up[0]] = NewCamPosUp*Up[1];
+		camera[View[0]] = -NewCamPosView*View[1];
+		ChangingPlane = 0;
+		AutoRun = 1;
 	}
-	glutPostRedisplay();
 }
 
 void display()
@@ -102,7 +147,7 @@ void display()
 	location[Left[0]] = head[Left[0]];
 	location[Up[0]] = head[Up[0]];
 	location[View[0]] = head[View[0]] + 50 * View[1];
-	gluLookAt(camera[0], camera[1], camera[2], location[0], location[1], location[2], CameraUp[0], CameraUp[1], CameraUp[2]); //相机位置,中心位置，上向量
+	gluLookAt(camera[0], camera[1], camera[2], head[0], head[1], head[2], CameraUp[0], CameraUp[1], CameraUp[2]); //相机位置,中心位置，上向量
 
 	drawWorld();
 	glPushMatrix();
@@ -152,7 +197,6 @@ void turn(int direction)
 
 void keyboardFunc(unsigned char key, int x, int y)
 {
-	
 	if (EnableKeyboard)
 	{
 		angleTurn = 0.0;
@@ -160,6 +204,7 @@ void keyboardFunc(unsigned char key, int x, int y)
 		{
 		case'a':
 			AutoRun = 0;
+			BackUpVectors();
 			turn(1);
 			swap(View[0], Left[0]);
 			swap(View[1], Left[1]);
@@ -168,6 +213,7 @@ void keyboardFunc(unsigned char key, int x, int y)
 			break;
 		case'd':
 			AutoRun = 0;
+			BackUpVectors();
 			turn(-1);
 			swap(View[0], Left[0]);
 			swap(View[1], Left[1]);
@@ -230,4 +276,3 @@ void setMatirial(const GLfloat mat_diffuse[4], GLfloat mat_shininess)
 	glMaterialfv(GL_FRONT, GL_EMISSION, mat_emission);
 	glMaterialf(GL_FRONT, GL_SHININESS, mat_shininess);
 }
-
