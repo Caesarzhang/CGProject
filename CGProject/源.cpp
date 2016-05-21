@@ -5,7 +5,7 @@
 
 using namespace std;
 
-#define LengthOfCube 33.0
+#define LengthOfCube 103.0
 #define LengthOfColumn 1.0
 
 #define StartViewX (LengthOfCube/2+4*LengthOfColumn)
@@ -102,6 +102,7 @@ void Update()
 
 	if (ChangingPlane)
 	{
+		EnableKeyboard = 0;
 		ChangingPlaneFunc();
 	}
 
@@ -114,10 +115,10 @@ void Update()
 
 void ChangingPlaneFunc()
 {
-	angleChangePlane += 0.08;
+	angleChangePlane += 0.1;
 
-	camera[View[0]] = head[View[0]] + RadiusOfCamera * OldUp[1] * sin(j2h(angleChangePlane))/(0.49*cos(j2h(4*angleChangePlane - 120)) + 0.51);
-	camera[Up[0]] = head[Up[0]] - RadiusOfCamera*OldView[1] * cos(j2h(angleChangePlane))/(0.49*cos(j2h(4 * angleChangePlane - 120))+0.51);
+	camera[View[0]] = head[View[0]] + RadiusOfCamera * OldUp[1] * sin(j2h(angleChangePlane))/(0.47*cos(j2h(4*angleChangePlane - 120)) + 0.53);
+	camera[Up[0]] = head[Up[0]] - RadiusOfCamera*OldView[1] * cos(j2h(angleChangePlane))/(0.47*cos(j2h(4 * angleChangePlane - 120))+0.53);
 
 	CameraUp[OldUp[0]] = cos(j2h(angleChangePlane - 30))*OldUp[1];
 	CameraUp[OldView[0]] = sin(j2h(angleChangePlane - 30))*OldView[1];
@@ -131,15 +132,21 @@ void ChangingPlaneFunc()
 		camera[View[0]] = -NewCamPosView*View[1];
 		ChangingPlane = 0;
 		AutoRun = 1;
+		EnableKeyboard = 1;
 	}
 }
 
 void ChangingDireFunc()
 {
-	angleTurn += 0.2;
+	angleTurn += 0.3;
 
 	camera[Left[0]] = head[Left[0]] - HeadCameDistance * OldView[1] * cos(j2h(angleTurn))*(0.4*cos(j2h(4 * angleTurn)) + 0.6);
 	camera[View[0]] = head[View[0]] - HeadCameDistance * OldLeft[1] * sin(j2h(angleTurn))*(0.4*cos(j2h(4 * angleTurn)) + 0.6)*ChangingDire;
+
+	if (angleTurn<75.1&&angleTurn>74.9)
+	{
+		head[OldView[0]] = (int)head[OldView[0]] + 0.5*OldView[1];
+	}
 
 	if (angleTurn >= 90.0)
 	{
