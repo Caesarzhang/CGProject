@@ -2,6 +2,7 @@
 #include "Dependencies\freeglut\freeglut.h"
 #include <math.h>
 #include <iostream>
+
 using namespace std;
 #define LengthOfCube 53.0
 #define LengthOfColumn 1.0
@@ -17,7 +18,7 @@ using namespace std;
 
 int Score = 0;/*分数*/
 double Speed = 0.01;/*速度*/
-int Level = 4;/*速度等级*/
+int Level = 3;/*速度等级*/
 
 bool
 Transparent = 0,/*判断地图是否透明*/
@@ -31,7 +32,8 @@ View[2] = { 1,1 },
 Left[2] = { 2,1 },
 OldUp[2] = { 0,1 },
 OldView[2] = { 1,1 },
-OldLeft[2] = { 2,1 };
+OldLeft[2] = { 2,1 },
+ChangingDire = 0;
 
 GLfloat 
 camera[3] = { StartViewX,-HeadCameDistance,0.0 },
@@ -66,6 +68,7 @@ void Update();
 void drawWorld();
 void setMatirial(const GLfloat mat_diffuse[4], GLfloat mat_shininess);
 void ChangingPlaneFunc();
+void ChangingDireFunc();
 int main(int argc, char *argv[])
 {
 	glutInit(&argc, argv);
@@ -85,7 +88,7 @@ int main(int argc, char *argv[])
 
 void Update()
 {
-	if (AutoRun)
+	if (AutoRun)/*转弯的时候停止向前，专心转弯*/
 	{
 		camera[View[0]] += Speed*Level*View[1];
 		head[View[0]] += Speed*Level*View[1];
@@ -99,7 +102,7 @@ void Update()
 	if (head[View[0]] * View[1] >= StartHeadX)
 	{
 		ChangingPlane = 1;
-		angleChangePlane = 30.0;
+		angleChangePlane = 30.0;		
 		AutoRun = 0;
 
 		BackUpVectors();
@@ -107,9 +110,15 @@ void Update()
 		swap(View[1], Up[1]);
 		View[1] = -View[1];
 	}
+
 	if (ChangingPlane)
 	{
 		ChangingPlaneFunc();
+	}
+
+	if (ChangingDire)
+	{
+		ChangingDireFunc();
 	}
 	glutPostRedisplay();
 }
@@ -134,6 +143,23 @@ void ChangingPlaneFunc()
 		ChangingPlane = 0;
 		AutoRun = 1;
 	}
+}
+
+void ChangingDireFunc()
+{
+	angleTurn += 0.2;
+	camera[Left[0]] = head[Left[0]] - HeadCameDistance * OldView[1] * cos(j2h(angleTurn));
+	camera[View[0]] = head[View[0]] - HeadCameDistance * OldLeft[1] * sin(j2h(angleTurn))*ChangingDire;
+	if (angleTurn >= 90.0)
+	{
+		camera[Left[0]] = head[Left[0]];
+		camera[View[0]] = head[View[0]] - HeadCameDistance * OldLeft[1] *ChangingDire;
+		EnableKeyboard = 1;
+		AutoRun = 1;
+		angleTurn = 0.0;
+		ChangingDire = 0;
+	}
+
 }
 
 void display()
@@ -166,6 +192,9 @@ void display()
 
 void drawWorld()
 {
+
+	const static GLfloat a[][6] = { { 1.0f, 0.0f, 0.0f, 0.4f },{ 0.0f, 1.0f, 0.0f, 0.4f },{ 0.0f, 0.0f, 1.0f, 0.4f },{ 1.0f, 1.0f, 0.0f, 0.4f },{ 0.0f, 1.0f, 1.0f, 0.4f },{ 1.0f, 0.0f, 1.0f, 0.4f } };
+
 	const static GLfloat blue_color[] = { 0.0f, 0.0f, 0.5f, 0.4f };
 	if (Transparent)
 	{
@@ -181,6 +210,43 @@ void drawWorld()
 			glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, floorColor);
 		glutSolidCube(LengthOfCube);
 		glPopMatrix();
+
+		glPushMatrix();
+		glTranslated(0, 0, 100);
+		glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, a[0]);
+		glutSolidCube(20);
+		glPopMatrix();
+
+		glPushMatrix();
+		glTranslated(0, 0, -100);
+		glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, a[1]);
+		glutSolidCube(20);
+		glPopMatrix();
+
+		glPushMatrix();
+		glTranslated(0, 100, 0);
+		glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, a[2]);
+		glutSolidCube(20);
+		glPopMatrix();
+
+		glPushMatrix();
+		glTranslated(0, -100, 0);
+		glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, a[3]);
+		glutSolidCube(20);
+		glPopMatrix();
+
+		glPushMatrix();
+		glTranslated(100, 0, 0);
+		glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, a[4]);
+		glutSolidCube(20);
+		glPopMatrix();
+
+		glPushMatrix();
+		glTranslated(-100, 0, 0);
+		glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, a[5]);
+		glutSolidCube(20);
+		glPopMatrix();
+
 		glDepthMask(GL_TRUE);
 	
 }
@@ -199,26 +265,27 @@ void keyboardFunc(unsigned char key, int x, int y)
 {
 	if (EnableKeyboard)
 	{
-		angleTurn = 0.0;
 		switch (key)
 		{
 		case'a':
+			angleChangePlane = 0.0;
 			AutoRun = 0;
+			EnableKeyboard = 0;
 			BackUpVectors();
-			turn(1);
+			ChangingDire = 1;
 			swap(View[0], Left[0]);
 			swap(View[1], Left[1]);
 			Left[1] = -1 * Left[1];
-			AutoRun = 1;
 			break;
 		case'd':
+			angleChangePlane = 0.0;
 			AutoRun = 0;
 			BackUpVectors();
-			turn(-1);
+			EnableKeyboard = 0;
 			swap(View[0], Left[0]);
 			swap(View[1], Left[1]);
 			View[1] = -1 * View[1];
-			AutoRun = 1;
+			ChangingDire = -1;
 			break;
 		}
 		glutPostRedisplay();
