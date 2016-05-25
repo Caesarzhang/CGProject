@@ -41,12 +41,28 @@ GLfloat
 camera[3] = { StartViewX,-HeadCameDistance,0.0 },
 angleTurn = 0.0,
 angleChangePlane=0.0,
-CameraUp[3] = { 1.0,0.0,0.0 }, /*摄像机上向量*/
-head[3] = { StartHeadX,0.0,0.0 },/*虵头*/
 lightPosition[][4] = { { 0.0,-1.0,0.0,0.0 },{ 0.0,0.0,0.0,1.0 } },/*环境光的位置*/
 wallSpecular[4] = { 0.3,0.3,0.3,1.0 },
 wallShininess = 50.0;       //镜面属性 小-粗糙
+GLfloat CameraUp[3] = { 1.0,0.0,0.0 }; /*摄像机上向量*/
 
+class Snake{
+	
+	public:
+	GLfloat head[3] = { StartHeadX,0.0,0.0 };/*虵头*/
+
+	Snake(){
+
+	}
+
+	void display(){
+
+		glutSolidTeapot(2.0);
+
+	}
+};
+
+Snake TA;
 void init();
 void BackUpVectors();
 void keyboardFunc(unsigned char key, int x, int y);
@@ -80,7 +96,7 @@ void Update()
 	if (AutoRun)/*转弯的时候停止向前，专心转弯*/
 	{
 		camera[View[0]] += Speed*Level*View[1];
-		head[View[0]] += Speed*Level*View[1];
+		TA.head[View[0]] += Speed*Level*View[1];
 	}
 
 	if (Score > Level * 100)
@@ -88,7 +104,7 @@ void Update()
 		Level++;
 	}
 
-	if (head[View[0]] * View[1] >= StartHeadX)
+	if (TA.head[View[0]] * View[1] >= StartHeadX)
 	{
 		ChangingPlane = 1;
 		angleChangePlane = 30.0;		
@@ -117,8 +133,8 @@ void ChangingPlaneFunc()
 {
 	angleChangePlane += 0.1;
 
-	camera[View[0]] = head[View[0]] + RadiusOfCamera * OldUp[1] * sin(j2h(angleChangePlane))/(0.47*cos(j2h(4*angleChangePlane - 120)) + 0.53);
-	camera[Up[0]] = head[Up[0]] - RadiusOfCamera*OldView[1] * cos(j2h(angleChangePlane))/(0.47*cos(j2h(4 * angleChangePlane - 120))+0.53);
+	camera[View[0]] = TA.head[View[0]] + RadiusOfCamera * OldUp[1] * sin(j2h(angleChangePlane))/(0.47*cos(j2h(4*angleChangePlane - 120)) + 0.53);
+	camera[Up[0]] = TA.head[Up[0]] - RadiusOfCamera*OldView[1] * cos(j2h(angleChangePlane))/(0.47*cos(j2h(4 * angleChangePlane - 120))+0.53);
 
 	CameraUp[OldUp[0]] = cos(j2h(angleChangePlane - 30))*OldUp[1];
 	CameraUp[OldView[0]] = sin(j2h(angleChangePlane - 30))*OldView[1];
@@ -140,18 +156,18 @@ void ChangingDireFunc()
 {
 	angleTurn += 0.3;
 
-	camera[Left[0]] = head[Left[0]] - HeadCameDistance * OldView[1] * cos(j2h(angleTurn))*(0.4*cos(j2h(4 * angleTurn)) + 0.6);
-	camera[View[0]] = head[View[0]] - HeadCameDistance * OldLeft[1] * sin(j2h(angleTurn))*(0.4*cos(j2h(4 * angleTurn)) + 0.6)*ChangingDire;
+	camera[Left[0]] = TA.head[Left[0]] - HeadCameDistance * OldView[1] * cos(j2h(angleTurn))*(0.4*cos(j2h(4 * angleTurn)) + 0.6);
+	camera[View[0]] = TA.head[View[0]] - HeadCameDistance * OldLeft[1] * sin(j2h(angleTurn))*(0.4*cos(j2h(4 * angleTurn)) + 0.6)*ChangingDire;
 
 	if (angleTurn<75.1&&angleTurn>74.9)
 	{
-		head[OldView[0]] = (int)head[OldView[0]] + 0.5*OldView[1];
+		TA.head[OldView[0]] = (int)TA.head[OldView[0]] + 0.5*OldView[1];
 	}
 
 	if (angleTurn >= 90.0)
 	{
-		camera[Left[0]] = head[Left[0]];
-		camera[View[0]] = head[View[0]] - HeadCameDistance * OldLeft[1] *ChangingDire;
+		camera[Left[0]] = TA.head[Left[0]];
+		camera[View[0]] = TA.head[View[0]] - HeadCameDistance * OldLeft[1] *ChangingDire;
 		EnableKeyboard = 1;
 		AutoRun = 1;
 		angleTurn = 0.0;
@@ -168,17 +184,20 @@ void display()
 	gluPerspective(100.0f, 1.5f, 0.1f, 500.0f);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	gluLookAt(camera[0], camera[1], camera[2], head[0], head[1], head[2], CameraUp[0], CameraUp[1], CameraUp[2]); //相机位置,中心位置，上向量
+	gluLookAt(camera[0], camera[1], camera[2], TA.head[0], TA.head[1], TA.head[2], CameraUp[0], CameraUp[1], CameraUp[2]); //相机位置,中心位置，上向量
 
 	drawWorld();
 
-	glTranslated(head[0], head[1], head[2]);
+	glTranslated(TA.head[0], TA.head[1], TA.head[2]);
 	glRotated(180, 1, 0, 0);
 	glRotated(-90, 0, 0, 1);
 	glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, headColor);
 	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, headColor);
-	glutSolidTeapot(1.0);
+	glPushMatrix();
 
+	TA.display();
+
+	glPopMatrix();
 	glutSwapBuffers();
 }
 
@@ -245,6 +264,10 @@ void drawWorld()
 
 void keyboardFunc(unsigned char key, int x, int y)
 {
+	// use this function to accomplish the control input
+	// to actuallt control the snake ta move
+	// given the snake is always moving forward
+	// use 'a' to turn left and use 'd' to turn right
 	if (EnableKeyboard)
 	{
 		switch (key)
