@@ -4,10 +4,10 @@
 #include <iostream>
 
 using namespace std;
-#define LengthOfCube 53.0
+
+#define LengthOfCube 103.0
 #define LengthOfColumn 1.0
 
-#define j2h(x) (3.1415926*(x)/180.0)
 #define StartViewX (LengthOfCube/2+4*LengthOfColumn)
 #define StartHeadX (LengthOfCube/2+LengthOfColumn/2)
 
@@ -15,6 +15,8 @@ using namespace std;
 #define RadiusOfCamera (8*LengthOfColumn)
 #define NewCamPosUp StartViewX
 #define NewCamPosView (StartHeadX+HeadCameDistance)
+
+#define j2h(x) (3.1415926*(x)/180.0)
 
 int Score = 0;/*分数*/
 double Speed = 0.01;/*速度*/
@@ -39,36 +41,143 @@ GLfloat
 camera[3] = { StartViewX,-HeadCameDistance,0.0 },
 angleTurn = 0.0,
 angleChangePlane=0.0,
-CameraUp[3] = { 1.0,0.0,0.0 }, /*摄像机上向量*/
-head[3] = { StartHeadX,0.0,0.0 },/*虵头*/
-location[3],
 lightPosition[][4] = { { 0.0,-1.0,0.0,0.0 },{ 0.0,0.0,0.0,1.0 } },/*环境光的位置*/
-wallSpecular[4] = { 0.3,0.3,0.3,1.0 }, 
-headColor[4] = { 1.0,0.494,0.11,1.0 },	
-floorColor[4] = { 0.64,0.376,0.2,0.7 },
+wallSpecular[4] = { 0.3,0.3,0.3,1.0 },
 wallShininess = 50.0;       //镜面属性 小-粗糙
+GLfloat CameraUp[3] = { 1.0,0.0,0.0 }; /*摄像机上向量*/
 
-void init();
-void BackUpVectors()
-{
-	for (int i = 0; i < 2; i++)
-	{
-		OldUp[i] = Up[i];
-		OldView[i] = View[i];
-		OldLeft[i] = Left[i];
+class Snake{
+
+
+//here begins the user interface of class snake
+public:
+	GLfloat head[3] = { StartHeadX,0.0,0.0 };/*虵头*/
+
+	Snake(){
+		start_bodypiece = 0;
+		end_bodypiece = 1;
+		num_body = 1;
+		memset(body_position, 0, sizeof(body_position));
 	}
-}
+
+	void display(){
+
+		displayHead();
+		displayBody();
+		displayTail();
+
+	}
+
+	void update() {
+		debug_print();
+		update_num();
+		update_position();
+	}
+
+
+//here begins inner logic
+private:
+	void displayHead()
+	{
+		glPushMatrix();
+		glTranslated(head[0], head[1], head[2]);
+		glRotated(180, 1, 0, 0);
+		glRotated(-90, 0, 0, 1);
+
+		
+		glutSolidTeapot(2.0);
+
+		glPopMatrix();
+		
+	}
+
+
+	#define max_body_num 100 
+	//to record the position of every body piece
+
+	GLfloat body_position[max_body_num][3];
+	int start_bodypiece, end_bodypiece;
+	void displayBody()
+	{
+		for (int i = start_bodypiece; i < end_bodypiece; i++)
+		{
+			if (i >= max_body_num)i = 0;
+			glPushMatrix();
+			glTranslatef(body_position[i][0], body_position[i][1], body_position[i][2]);
+			glutSolidTeaspoon(1.0);
+			glPopMatrix();
+		}
+	}
+
+	void displayTail()
+	{
+		glPushMatrix();
+		glTranslatef(body_position[end_bodypiece][0], body_position[end_bodypiece][1], body_position[end_bodypiece][2]);
+		glutSolidTeaspoon(1.0);
+		glPopMatrix();
+	}
+
+	//a int indicated the length of snake's body
+	int num_body;
+	//use in body_num calcul,when reach a certain time
+	int count_grow;
+	//a count used in recoding the position of 
+	int count;
+
+	void update_num()
+	{
+		count_grow++;
+		if (count_grow >= 10)
+		{
+			num_body++;
+			
+			count_grow = 0;
+
+			end_bodypiece++;
+
+			if (end_bodypiece >= max_body_num)end_bodypiece = 0;
+			body_position[end_bodypiece][0] = head[0];
+			body_position[end_bodypiece][1] = head[1];
+			body_position[end_bodypiece][2] = head[2];
+		}
+
+
+	}
+
+
+	void update_position()
+	{
+		count++;
+		if (count >= 20)
+		{
+			start_bodypiece++;
+			end_bodypiece = start_bodypiece + num_body;
+
+			if (start_bodypiece >= max_body_num)start_bodypiece -= max_body_num;
+			if (end_bodypiece >= max_body_num)end_bodypiece -= max_body_num;
+
+			count = 0;
+		}
+	}
+
+	void debug_print()
+	{
+		printf("num_body: %d\n", num_body);
+	}
+};
+
+Snake TA;
+void init();
+void BackUpVectors();
 void keyboardFunc(unsigned char key, int x, int y);
 void display();
 void processMousePassiveMotion(int x, int y);
-void changeDirection(int Up, int signOfUp, int oldD, int signOfOldD, int newD, int signOfNewD);
-void calcLeft();
-void turn(int direction);
 void Update();
 void drawWorld();
 void setMatirial(const GLfloat mat_diffuse[4], GLfloat mat_shininess);
 void ChangingPlaneFunc();
 void ChangingDireFunc();
+
 int main(int argc, char *argv[])
 {
 	glutInit(&argc, argv);
@@ -88,10 +197,11 @@ int main(int argc, char *argv[])
 
 void Update()
 {
+	TA.update();
 	if (AutoRun)/*转弯的时候停止向前，专心转弯*/
 	{
 		camera[View[0]] += Speed*Level*View[1];
-		head[View[0]] += Speed*Level*View[1];
+		TA.head[View[0]] += Speed*Level*View[1];
 	}
 
 	if (Score > Level * 100)
@@ -99,7 +209,7 @@ void Update()
 		Level++;
 	}
 
-	if (head[View[0]] * View[1] >= StartHeadX)
+	if (TA.head[View[0]] * View[1] >= StartHeadX)
 	{
 		ChangingPlane = 1;
 		angleChangePlane = 30.0;		
@@ -113,6 +223,7 @@ void Update()
 
 	if (ChangingPlane)
 	{
+		EnableKeyboard = 0;
 		ChangingPlaneFunc();
 	}
 
@@ -125,10 +236,10 @@ void Update()
 
 void ChangingPlaneFunc()
 {
-	angleChangePlane += 0.2;
+	angleChangePlane += 0.1;
 
-	camera[View[0]] = head[View[0]] + RadiusOfCamera * OldUp[1] * sin(j2h(angleChangePlane));
-	camera[Up[0]] = head[Up[0]] - RadiusOfCamera*OldView[1] * cos(j2h(angleChangePlane));
+	camera[View[0]] = TA.head[View[0]] + RadiusOfCamera * OldUp[1] * sin(j2h(angleChangePlane))/(0.47*cos(j2h(4*angleChangePlane - 120)) + 0.53);
+	camera[Up[0]] = TA.head[Up[0]] - RadiusOfCamera*OldView[1] * cos(j2h(angleChangePlane))/(0.47*cos(j2h(4 * angleChangePlane - 120))+0.53);
 
 	CameraUp[OldUp[0]] = cos(j2h(angleChangePlane - 30))*OldUp[1];
 	CameraUp[OldView[0]] = sin(j2h(angleChangePlane - 30))*OldView[1];
@@ -142,51 +253,49 @@ void ChangingPlaneFunc()
 		camera[View[0]] = -NewCamPosView*View[1];
 		ChangingPlane = 0;
 		AutoRun = 1;
+		EnableKeyboard = 1;
 	}
 }
 
 void ChangingDireFunc()
 {
-	angleTurn += 0.2;
-	camera[Left[0]] = head[Left[0]] - HeadCameDistance * OldView[1] * cos(j2h(angleTurn));
-	camera[View[0]] = head[View[0]] - HeadCameDistance * OldLeft[1] * sin(j2h(angleTurn))*ChangingDire;
+	angleTurn += 0.3;
+
+	camera[Left[0]] = TA.head[Left[0]] - HeadCameDistance * OldView[1] * cos(j2h(angleTurn))*(0.4*cos(j2h(4 * angleTurn)) + 0.6);
+	camera[View[0]] = TA.head[View[0]] - HeadCameDistance * OldLeft[1] * sin(j2h(angleTurn))*(0.4*cos(j2h(4 * angleTurn)) + 0.6)*ChangingDire;
+
+	if (angleTurn<75.1&&angleTurn>74.9)
+	{
+		TA.head[OldView[0]] = (int)TA.head[OldView[0]] + 0.5*OldView[1];
+	}
+
 	if (angleTurn >= 90.0)
 	{
-		camera[Left[0]] = head[Left[0]];
-		camera[View[0]] = head[View[0]] - HeadCameDistance * OldLeft[1] *ChangingDire;
+		camera[Left[0]] = TA.head[Left[0]];
+		camera[View[0]] = TA.head[View[0]] - HeadCameDistance * OldLeft[1] *ChangingDire;
 		EnableKeyboard = 1;
 		AutoRun = 1;
 		angleTurn = 0.0;
 		ChangingDire = 0;
 	}
-
 }
 
 void display()
 {
+	GLfloat headColor[4] = { 1.0,0.494,0.11,1.0 };
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	gluPerspective(100.0f, 1.5f, 0.1f, 500.0f);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	location[Left[0]] = head[Left[0]];
-	location[Up[0]] = head[Up[0]];
-	location[View[0]] = head[View[0]] + 50 * View[1];
-	gluLookAt(camera[0], camera[1], camera[2], head[0], head[1], head[2], CameraUp[0], CameraUp[1], CameraUp[2]); //相机位置,中心位置，上向量
+	gluLookAt(camera[0], camera[1], camera[2], TA.head[0], TA.head[1], TA.head[2], CameraUp[0], CameraUp[1], CameraUp[2]); //相机位置,中心位置，上向量
 
 	drawWorld();
-	glPushMatrix();
-	{
-		glTranslated(head[0], head[1], head[2]);
-		glRotated(180, 1, 0, 0);
-		glRotated(-90, 0, 0, 1);
-		glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, headColor);
-		glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, headColor);
-		glutSolidTeapot(1.0);
-	}
-	glPopMatrix();
-	//debugDisplay();
+
+	glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, headColor);
+	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, headColor);
+	TA.display();
 	glutSwapBuffers();
 }
 
@@ -207,7 +316,7 @@ void drawWorld()
 		glPushMatrix();
 		//glLightfv(GL_LIGHT0, GL_POSITION, lightPosition[1]);
 		if(!Transparent)
-			glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, floorColor);
+			glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, blue_color);
 		glutSolidCube(LengthOfCube);
 		glPopMatrix();
 
@@ -251,18 +360,12 @@ void drawWorld()
 	
 }
 
-void turn(int direction)
-{
-	double angle = 0.0;
-	for (angle = 0.0; angle < 90; angle=angle+0.2)
-	{
-		camera[View[0]] = head[View[0]] - HeadCameDistance * View[1] * cos(j2h(angle));
-		camera[Left[0]] = head[Left[0]] - HeadCameDistance * Left[1] * sin(j2h(angle))*direction;
-	}
-}
-
 void keyboardFunc(unsigned char key, int x, int y)
 {
+	// use this function to accomplish the control input
+	// to actuallt control the snake ta move
+	// given the snake is always moving forward
+	// use 'a' to turn left and use 'd' to turn right
 	if (EnableKeyboard)
 	{
 		switch (key)
@@ -342,4 +445,14 @@ void setMatirial(const GLfloat mat_diffuse[4], GLfloat mat_shininess)
 	glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
 	glMaterialfv(GL_FRONT, GL_EMISSION, mat_emission);
 	glMaterialf(GL_FRONT, GL_SHININESS, mat_shininess);
+}
+
+void BackUpVectors()
+{
+	for (int i = 0; i < 2; i++)
+	{
+		OldUp[i] = Up[i];
+		OldView[i] = View[i];
+		OldLeft[i] = Left[i];
+	}
 }
